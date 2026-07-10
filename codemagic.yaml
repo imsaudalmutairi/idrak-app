@@ -24,17 +24,57 @@ workflows:
       - name: Set up keychain
         script: keychain initialize
 
-      - name: Generate signing key and fetch signing files
+      - name: Create distribution certificate
         script: |
-          # Generate a fresh private key so fetch-signing-files can create a new certificate
-          openssl genpkey -algorithm RSA -out /tmp/cert_key.pem -pkeyopt rsa_keygen_bits:2048
+          set -e
+          mkdir -p /tmp/certs
+
+          # Generate fresh private key
+          openssl genrsa -out /tmp/key.pem 2048
+
+          # Generate CSR
+          openssl req -new -key /tmp/key.pem -out /tmp/cert.csr \
+            -subj "/CN=Apple Distribution/O=SJM Labs Ltd/C=SA"
+
+          # Create the distribution certificate in Apple's portal
+          app-store-connect certificates create \
+            --type IOS_DISTRIBUTION \
+            --certificate-signing-request @file:/tmp/cert.csr \
+            --save \
+            --certificates-dir /tmp/certs/
+
+          # Find the downloaded certificate
+          CERT_FILE=$(ls /tmp/certs/*.cer 2>/dev/null | head -1)
+          echo "Certificate file: $CERT_FILE"
+
+          # Convert DER → PEM
+          openssl x509 -inform DER -in "$CERT_FILE" -out /tmp/cert.pem
+
+          # Bundle into .p12
+          openssl pkcs12 -export \
+            -out /tmp/signing.p12 \
+            -inkey /tmp/key.pem \
+            -in /tmp/cert.pem \
+            -passout pass:codemagic
+
+          # Import .p12 into keychain
+          security import /tmp/signing.p12 \
+            -k ~/Library/Keychains/codemagic.keychain-db \
+            -P "codemagic" \
+            -T /usr/bin/codesign \
+            -T /usr/bin/productbuild
+
+          # Allow codesign to access without UI prompt
+          security set-key-partition-list \
+            -S apple-tool:,apple: \
+            -s \
+            -k "" ~/Library/Keychains/codemagic.keychain-db
+
+      - name: Fetch provisioning profile
+        script: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --certificate-key /tmp/cert_key.pem \
             --create
-
-      - name: Set up signing certificate
-        script: keychain add-certificates
 
       - name: Use provisioning profiles
         script: xcode-project use-profiles
