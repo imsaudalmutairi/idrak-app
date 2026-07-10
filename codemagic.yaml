@@ -7,8 +7,6 @@ workflows:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.sjmlabs.idrak
-      app_store_connect:
-        auth: integration
       vars:
         APP_STORE_CONNECT_ISSUER_ID: "1db1e3d3-e88d-4b24-bed7-66628813c8c2"
         APP_STORE_CONNECT_KEY_IDENTIFIER: "9525KLH6QQ"
