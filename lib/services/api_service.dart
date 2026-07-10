@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/message.dart';
 
 const _endpoint =
-    'https://storagegox206--sjm-idrak-serve-idrak-2-idrakserver-serve.modal.run/v1/chat/completions';
+    'https://storagegox206--sjm-idrak-serve-idrak-2-gguf-idrakserver-serve.modal.run/v1/chat/completions';
 
 const _systemPrompt = '''أنت إدراك (Idrak)، مساعد ذكاء اصطناعي من تطوير SJM Labs. شخصيتك ذكية، ودودة، ومباشرة.
 هويتك: أنت إدراك من SJM Labs. لست ChatGPT ولا Gemini.
