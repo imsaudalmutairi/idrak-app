@@ -47,7 +47,7 @@ workflows:
           CERT_FILE=$(ls /tmp/certs/*.cer 2>/dev/null | head -1)
           echo "Certificate file: $CERT_FILE"
 
-          # Convert DER → PEM
+          # Convert DER to PEM
           openssl x509 -inform DER -in "$CERT_FILE" -out /tmp/cert.pem
 
           # Bundle into .p12
