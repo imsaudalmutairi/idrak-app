@@ -1,0 +1,49 @@
+workflows:
+  ios-testflight:
+    name: idrak iOS → TestFlight
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.sjmlabs.idrak
+      app_store_connect:
+        auth: integration
+      vars:
+        APP_STORE_CONNECT_ISSUER_ID: "1db1e3d3-e88d-4b24-bed7-66628813c8c2"
+        APP_STORE_CONNECT_KEY_IDENTIFIER: "9525KLH6QQ"
+        APPLE_TEAM_ID: "G87T5A359Y"
+        BUNDLE_ID: "com.sjmlabs.idrak"
+    scripts:
+      - name: Get packages
+        script: flutter pub get
+      - name: Build iOS (no codesign)
+        script: |
+          flutter build ios --release --no-codesign \
+            --build-name=1.0.0 \
+            --build-number=$(($(date +%s)))
+      - name: Archive & sign
+        script: |
+          xcode-project use-profiles
+          xcodebuild \
+            -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -sdk iphoneos \
+            -configuration Release \
+            -archivePath build/Runner.xcarchive \
+            DEVELOPMENT_TEAM=$APPLE_TEAM_ID \
+            archive
+      - name: Export IPA
+        script: |
+          xcode-project build-ipa \
+            --workspace ios/Runner.xcworkspace \
+            --archive-path build/Runner.xcarchive
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - Internal Testers
