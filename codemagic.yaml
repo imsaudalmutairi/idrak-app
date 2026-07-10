@@ -1,6 +1,6 @@
 workflows:
   ios-testflight:
-    name: idrak iOS → TestFlight
+    name: idrak iOS -> TestFlight
     max_build_duration: 60
     instance_type: mac_mini_m2
 
@@ -11,6 +11,8 @@ workflows:
       flutter: stable
       xcode: latest
       cocoapods: default
+      groups:
+        - ios-signing
       vars:
         BUNDLE_ID: "com.sjmlabs.idrak"
         APPLE_TEAM_ID: "G87T5A359Y"
@@ -24,13 +26,12 @@ workflows:
       - name: Set up keychain
         script: keychain initialize
 
-      - name: Create distribution certificate
+      - name: Import distribution certificate
         script: |
-          set -e
-          app-store-connect certificates create \
-            --type IOS_DISTRIBUTION \
-            --save
-          keychain add-certificates
+          echo "$CM_CERTIFICATE" | base64 --decode > /tmp/certificate.p12
+          keychain add-certificates \
+            --certificate /tmp/certificate.p12 \
+            --certificate-password "$CM_CERTIFICATE_PASSWORD"
 
       - name: Fetch provisioning profile
         script: |
