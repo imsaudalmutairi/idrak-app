@@ -11,8 +11,6 @@ workflows:
       flutter: stable
       xcode: latest
       cocoapods: default
-      groups:
-        - ios-signing
       vars:
         BUNDLE_ID: "com.sjmlabs.idrak"
         APPLE_TEAM_ID: "G87T5A359Y"
@@ -26,10 +24,13 @@ workflows:
       - name: Set up keychain
         script: keychain initialize
 
-      - name: Fetch signing files
+      - name: Generate signing key and fetch signing files
         script: |
+          # Generate a fresh private key so fetch-signing-files can create a new certificate
+          openssl genpkey -algorithm RSA -out /tmp/cert_key.pem -pkeyopt rsa_keygen_bits:2048
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
+            --certificate-key /tmp/cert_key.pem \
             --create
 
       - name: Set up signing certificate
