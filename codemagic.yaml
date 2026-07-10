@@ -33,14 +33,26 @@ workflows:
             --certificate /tmp/certificate.p12 \
             --certificate-password "$CM_CERTIFICATE_PASSWORD"
 
-      - name: Fetch provisioning profile
+      - name: Create provisioning profile
         script: |
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create
+          set -e
+          # Get the bundle ID resource ID from Apple
+          BUNDLE_ID_RES=$(app-store-connect bundle-ids list \
+            --identifier "$BUNDLE_ID" \
+            --platform IOS \
+            --json \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print(d[0]['id'])")
+          echo "Bundle ID resource: $BUNDLE_ID_RES"
 
-      - name: Use provisioning profiles
-        script: xcode-project use-profiles
+          # Create App Store profile using our specific certificate
+          app-store-connect profiles create \
+            --name "idrak_AppStore" \
+            --type IOS_APP_STORE \
+            --bundle-id "$BUNDLE_ID_RES" \
+            --certificate TXWGCHGYY3 \
+            --save
+
+          xcode-project use-profiles
 
       - name: Build Flutter iOS (no codesign)
         script: |
